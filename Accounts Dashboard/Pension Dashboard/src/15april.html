@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Data Dual Axis Line Graph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <style>
+        /* Styles as before */
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Excel Data Dual Axis Line Graph</h1>
+    <div>
+        <label for="data-select">Select Data:</label>
+        <select id="data-select">
+            <option value="crore">Detail of upload during the month (Amount)</option>
+            <option value="thousand1">No. of subscribers registered</option>
+            <option value="thousand2">No. of subscribers whose NPS deduction has been made during the month</option>
+            <option value="thousand3">No. of subscribers whose NPS deduction has been uploaded on CRA-NPS during the month</option>
+        </select>
+    </div>
+    <div id="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch Excel data
+            fetch('./data.xlsx')
+                .then(response => response.arrayBuffer())
+                .then(data => {
+                    // Parse Excel data
+                    const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const range = XLSX.utils.decode_range(sheet['!ref']);
+                    
+                    const months = [];
+                    const croreData = [];
+                    const thousand1 = [];
+                    const thousand2 = [];
+                    const thousand3 = [];
+
+                    for (let i = range.s.r + 1; i <= range.e.r; i++) {
+                        const cellMonth = sheet[XLSX.utils.encode_cell({ r: i, c: 0 })];
+                        const cellCrore = sheet[XLSX.utils.encode_cell({ r: i, c: 1 })];
+                        const cellThousand1 = sheet[XLSX.utils.encode_cell({ r: i, c: 2 })];
+                        const cellThousand2 = sheet[XLSX.utils.encode_cell({ r: i, c: 3 })];
+                        const cellThousand3 = sheet[XLSX.utils.encode_cell({ r: i, c: 4 })];
+
+                        months.push(cellMonth.w);
+                        croreData.push(cellCrore.v);
+                        thousand1.push(cellThousand1.v);
+                        thousand2.push(cellThousand2.v);
+                        thousand3.push(cellThousand3.v);
+                    }
+
+                    // Create initial chart
+                    const ctx = document.getElementById('myChart').getContext('2d');
+                    const myChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: months,
+                            datasets: [{
+                                label: 'Detail of upload during the month (Amount)',
+                                data: croreData,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                                fill: false,
+                                yAxisID: 'y-axis-1'
+                            }]
+                        },
+                        options: {
+                            // Options as before
+                        }
+                    });
+
+                    // Dropdown change event listener
+                    const dataSelect = document.getElementById('data-select');
+                    dataSelect.addEventListener('change', function(event) {
+                        const selectedData = event.target.value;
+                        let newData;
+                        let label;
+                        switch (selectedData) {
+                            case 'crore':
+                                newData = croreData;
+                                label = 'Detail of upload during the month (Amount)';
+                                break;
+                            case 'thousand1':
+                                newData = thousand1;
+                                label = 'No. of subscribers registered';
+                                break;
+                            case 'thousand2':
+                                newData = thousand2;
+                                label = 'No. of subscribers whose NPS deduction has been made during the month';
+                                break;
+                            case 'thousand3':
+                                newData = thousand3;
+                                label = 'No. of subscribers whose NPS deduction has been uploaded on CRA-NPS during the month';
+                                break;
+                            default:
+                                break;
+                        }
+                        
+                        myChart.data.datasets[0].data = newData;
+                        myChart.data.datasets[0].label = label;
+                        myChart.update();
+                    });
+                })
+                .catch(error => console.error('Error fetching Excel file:', error));
+        });
+    </script>
+</body>
+</html>
